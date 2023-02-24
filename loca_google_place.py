@@ -16,12 +16,16 @@ def search_address(driver,Latitude=0,Longitude=0):
     #logging.info(url_google_plcae)
     driver.get(url_google_plcae)
     wait = WebDriverWait(driver, 20)
-    address_txt_xpath = '//*[@id="QA0Szd"]/div/div/div[1]/div[2]/div/div[1]/div/div/div[10]/div/div[1]/span[3]/span[3]'
-    address_plus_xpath = '//*[@id="QA0Szd"]/div/div/div[1]/div[2]/div/div[1]/div/div/div[11]/div/div[1]/span[3]/span[3]'
+    #address_txt_xpath = '//*[@id="QA0Szd"]/div/div/div[1]/div[2]/div/div[1]/div/div/div[10]/div/div[1]/span[3]/span[3]'
+    address_txt_xpath = '//*[@id="QA0Szd"]/div/div/div[1]/div[2]/div/div[1]/div/div/div[10]/div[2]/div[2]/span[3]/span[3]'
+    #address_plus_xpath = '//*[@id="QA0Szd"]/div/div/div[1]/div[2]/div/div[1]/div/div/div[11]/div/div[1]/span[3]/span[3]'
+    address_plus_xpath = '//*[@id="QA0Szd"]/div/div/div[1]/div[2]/div/div[1]/div/div/div[11]/div[2]/div[2]/span[3]/span[3]'
+    
     wait.until(EC.visibility_of_element_located((By.XPATH,address_txt_xpath)))
     current_address =driver.find_element("xpath",address_txt_xpath).text
     current_address_plus =driver.find_element("xpath",address_plus_xpath).text
-    logging.info('address - %s address-plus - %s' %(current_address,current_address_plus))
+    #logging.info('address - %s address-plus - %s' %(current_address,current_address_plus))
+    return current_address, current_address_plus
     #time.sleep(1)
 
 def selenium_start():
@@ -40,32 +44,43 @@ def selenium_start():
     except:
         chromedriver_autoinstaller.install(True)
         driver = webdriver.Chrome(f'./{chrome_ver}/chromedriver.exe',options=options)
-
     driver.implicitly_wait(10) #Implicitly wait for 10 sec
     return driver
 
-driver = selenium_start()
+def main():
+    driver = selenium_start()
+    file = r'C:/Users/miskang/Downloads/slope_6_percent.xlsx'
+    wb = excel.Workbook(file,read_only=False,data_only=True)
+    logwork_ws = wb.get_worksheet('Sheet1')
+    logwork_row_index = wb.get_first_row('Sheet1')
+    #logging.info(logwork_row_index)
+    long_idx = logwork_row_index.index('Longitude')
+    lat_idx = logwork_row_index.index('Latitude')
+    add_idx = logwork_row_index.index('address')
+    count_idx = logwork_row_index.index('count')
+    #logging.info(f'long_idx - {long_idx}, lat_idx - {lat_idx}, add_idx - {add_idx}')
+    start = 1830
+    end = 5000
+    for data in logwork_ws.rows:
+        count = data[count_idx].value
+        Latitude = data[lat_idx].value
+        Longitude = data[long_idx].value
+        if count == 'count':
+            continue
+        else:
+            count = int(data[count_idx].value)
+            if count < start:
+                continue
+            if count == end:
+                break
+            else:
+                #logging.info(f'count - {count}, Latitude - {Latitude},Longitude - {Longitude}')
+                current_address, current_address_plus = search_address(driver,Latitude,Longitude)
+                logging.info(f';count;{count};current_address;{current_address};current_address_plus;{current_address_plus};')
 
-file = r'C:/Users/miskang/Downloads/NG_List_E46.xlsx'
+        
+    driver.close()
+    wb.close_workbook()
 
-wb = excel.Workbook(file,read_only=False,data_only=False)
-logwork_ws = wb.get_worksheet('NG_List')
-logwork_row_index = wb.get_first_row('NG_List')
-logging.info(logwork_row_index)
-
-count = 0
-for data in logwork_ws.rows:
-    count += 1
-
-    Latitude = data[3].value
-    Longitude = data[2].value
-    #logging.info('%s, %s' %(Latitude,Longitude))
-    if count == 1:
-        continue
-    if count <= 3339:
-        #break
-        continue
-    search_address(driver,Latitude,Longitude)
-
-driver.close()
-wb.close_workbook()
+if __name__ =='__main__':
+    main()
